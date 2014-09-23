@@ -45,6 +45,11 @@
 @property (nonatomic, assign) BOOL isContained;
 
 /**
+ *  The BOOL value to set if saved image should not rotate with accelerometer. Default is NO.
+ */
+@property (nonatomic, assign) BOOL ignoreMotionRotation;
+
+/**
  *  The DBCameraView property
  */
 @property (nonatomic, strong) DBCameraView *cameraView;

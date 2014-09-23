@@ -113,11 +113,13 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
     [super viewDidAppear:animated];
     [self.cameraManager performSelector:@selector(startRunning) withObject:nil afterDelay:0.0];
     
-    __weak typeof(self) weakSelf = self;
-    [[DBMotionManager sharedManager] setMotionRotationHandler:^(UIDeviceOrientation orientation){
-        [weakSelf rotationChanged:orientation];
-    }];
-    [[DBMotionManager sharedManager] startMotionHandler];
+    if (self.ignoreMotionRotation == NO) {
+        __weak typeof(self) weakSelf = self;
+        [[DBMotionManager sharedManager] setMotionRotationHandler:^(UIDeviceOrientation orientation){
+            [weakSelf rotationChanged:orientation];
+        }];
+        [[DBMotionManager sharedManager] startMotionHandler];
+    }
 }
 
 - (void) viewWillAppear:(BOOL)animated
