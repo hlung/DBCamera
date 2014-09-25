@@ -108,6 +108,16 @@
 - (void) dismissCamera:(id)cameraViewController;
 @end
 
+@protocol DBCameraOverlayDelegate <NSObject>
+@required
+/**
+ *  Tells the delegate the overlay rect for a given preview size.
+ *  For calculating the overlay image position on the full image.
+ *  It should return the same region for same image size aspect ratio.
+ */
+- (CGRect) camera:(id)cameraViewController overlayImageView:(UIImageView*)imageView frameForPreviewSize:(CGSize)size;
+@end
+
 /**
  *  DBCameraContainer delegate protocol
  */

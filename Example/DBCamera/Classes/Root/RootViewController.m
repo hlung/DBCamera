@@ -61,11 +61,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define kCellIdentifier @"CellIdentifier"
-#define kCameraTitles @[ @"Open Camera", @"Open Custom Camera", @"Open Camera without Segue", @"Open Camera without Container", @"Camera with force quad crop", @"Open Library Picker" ]
+#define kCameraTitles @[ @"Open Camera", @"Open Custom Camera", @"Open Camera without Segue", @"Open Camera without Container", @"Camera with force quad crop", @"Open Library Picker", @"Open Camera with Overlay" ]
 
 typedef void (^TableRowBlock)();
 
-@interface RootViewController () <DBCameraViewControllerDelegate, UITableViewDataSource, UITableViewDelegate> {
+@interface RootViewController () <DBCameraViewControllerDelegate, DBCameraOverlayDelegate, UITableViewDataSource, UITableViewDelegate> {
     UITableView *_tableView;
     NSDictionary *_actionMapping;
 }
@@ -80,7 +80,8 @@ typedef void (^TableRowBlock)();
     if ( self ) {
         _actionMapping = @{ @0:^{ [self openCamera]; }, @1:^{ [self openCustomCamera]; },
                             @2:^{ [self openCameraWithoutSegue]; }, @3:^{ [self openCameraWithoutContainer]; },
-                            @4:^{ [self openCameraWithForceQuad]; }, @5:^{ [self openLibrary]; } };
+                            @4:^{ [self openCameraWithForceQuad]; }, @5:^{ [self openLibrary]; },
+                            @6:^{ [self openCameraWithOverlay]; }};
     }
     
     return self;
@@ -207,6 +208,27 @@ typedef void (^TableRowBlock)();
     [self presentViewController:nav animated:YES completion:nil];
 }
 
+- (void) openCameraWithOverlay
+{
+    DBCameraViewController *cameraVC = [DBCameraViewController initWithDelegate:self];
+    [cameraVC setUseCameraSegue:NO];
+    [cameraVC setOverlayImage:[UIImage imageNamed:@"iPhone5.png"] delegate:self];
+    
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:cameraVC];
+    [nav setNavigationBarHidden:YES];
+    [self presentViewController:nav animated:YES completion:nil];
+}
+
+- (CGRect) camera:(id)cameraViewController overlayImageView:(UIImageView*)imageView frameForPreviewSize:(CGSize)size {
+    CGFloat shorterSide = size.width < size.height ? size.width : size.height;
+    CGFloat length = shorterSide * 0.4375; // if rect.size.width is 320, length is 140
+    CGSize overlaySize = CGSizeMake(length, length);
+    return CGRectIntegral(CGRectMake((size.width - overlaySize.width)/2,
+                                     (size.height - overlaySize.height)/2,
+                                     overlaySize.width,
+                                     overlaySize.height));
+}
+
 #pragma mark - UITableViewDataSource & UITableViewDelegate
 
 - (NSInteger) tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
@@ -242,6 +264,7 @@ typedef void (^TableRowBlock)();
 
 - (void) camera:(id)cameraViewController didFinishWithImage:(UIImage *)image withMetadata:(NSDictionary *)metadata
 {
+    NSLog(@"didFinishWithImage size: %@", NSStringFromCGSize(image.size));
     DetailViewController *detail = [[DetailViewController alloc] init];
     [detail setDetailImage:image];
     [self.navigationController pushViewController:detail animated:NO];

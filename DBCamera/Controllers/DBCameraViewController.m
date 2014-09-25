@@ -35,10 +35,15 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
 }
 
 @property (nonatomic, strong) id customCamera;
+@property (nonatomic, strong) DBCameraManager *cameraManager;
+@property (nonatomic, strong) UIImage *overlayImage;
+@property (nonatomic, strong) UIImageView *overlayImageView;
+@property (nonatomic, weak) id <DBCameraOverlayDelegate> overlayDelegate;
 @end
 
 @implementation DBCameraViewController
 @synthesize cameraGridView = _cameraGridView;
+@synthesize overlayImageView = _overlayImageView;
 @synthesize forceQuadCrop = _forceQuadCrop;
 @synthesize tintColor = _tintColor;
 @synthesize selectedTintColor = _selectedTintColor;
@@ -119,6 +124,20 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
             [weakSelf rotationChanged:orientation];
         }];
         [[DBMotionManager sharedManager] startMotionHandler];
+    }
+    
+    if (self.overlayImage) {
+        
+        // create overlayImageView
+        self.overlayImageView.frame = [self.overlayDelegate camera:self
+                                                  overlayImageView:self.overlayImageView
+                                               frameForPreviewSize:self.cameraView.previewLayer.frame.size];
+        self.overlayImageView.image = self.overlayImage;
+        [self.cameraView.previewLayer addSublayer:self.overlayImageView.layer];
+    }
+    else {
+        [self.overlayImageView.layer removeFromSuperlayer];
+        self.overlayImageView = nil;
     }
 }
 
@@ -207,6 +226,17 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
     return _cameraGridView;
 }
 
+- (UIImageView *) overlayImageView
+{
+    if ( !_overlayImageView ) {
+        UIImageView *iv = [[UIImageView alloc] init];
+        iv.backgroundColor = [UIColor clearColor];
+        _overlayImageView = iv;
+    }
+    
+    return _overlayImageView;
+}
+
 - (void) setCameraGridView:(DBCameraGridView *)cameraGridView
 {
     _cameraGridView = cameraGridView;
@@ -263,6 +293,26 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
 
 - (void) captureImageDidFinish:(UIImage *)image withMetadata:(NSDictionary *)metadata
 {
+    if (self.overlayImage) {
+        
+        // draw overlayView image in final image
+        CGSize fullImageSize = image.size; // max size {2448, 3264} on iPhone5, takes about 85MB of memory
+        CGRect previewRectInFullImage = [self previewRectInFinalImage_AVLayerVideoGravityResizeAspectFill:fullImageSize
+                                                                                              previewSize:self.cameraView.previewLayer.frame.size];
+        CGRect overlayFrame = [self.overlayDelegate camera:self
+                                          overlayImageView:self.overlayImageView
+                                       frameForPreviewSize:previewRectInFullImage.size];
+        CGRect rectToDraw = overlayFrame;
+        rectToDraw.origin.x += previewRectInFullImage.origin.x;
+        rectToDraw.origin.y += previewRectInFullImage.origin.y;
+        
+        UIGraphicsBeginImageContextWithOptions(fullImageSize, YES, 1.0f);
+        [image drawInRect:CGRectMake(0, 0, fullImageSize.width, fullImageSize.height)];
+        [self.overlayImage drawInRect:rectToDraw];
+        image = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+    }
+    
     _processingPhoto = NO;
 
     NSMutableDictionary *finalMetadata = [NSMutableDictionary dictionaryWithDictionary:metadata];
@@ -333,6 +383,45 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
             [[[UIAlertView alloc] initWithTitle:DBCameraLocalizedStrings(@"general.error.title") message:DBCameraLocalizedStrings(@"pickerimage.nopolicy") delegate:nil cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil] show];
         });
     }
+}
+
+#pragma mark - overlay
+
+- (void)setOverlayImage:(UIImage *)overlayImage delegate:(id<DBCameraOverlayDelegate>)delegate {
+    NSAssert(overlayImage != nil, @"overlayImage must be set!");
+    NSAssert(delegate != nil, @"delegate must be set!");
+    self.overlayImage = overlayImage;
+    self.overlayDelegate = delegate;
+    self.ignoreMotionRotation = YES;
+}
+
+/** Calculates a preview rect inside a final larger image, if the final image was previewed
+ with scale mode AVLayerVideoGravityResizeAspectFill.
+ @param finalSize Final image size.
+ @param previewSize Camera preview view size.
+ @return A CGRect
+ */
+- (CGRect)previewRectInFinalImage_AVLayerVideoGravityResizeAspectFill:(CGSize)finalSize previewSize:(CGSize)previewSize {
+    CGFloat previewAspRat = previewSize.width / previewSize.height;
+    CGFloat finalAspRat = finalSize.width / finalSize.height;
+    CGRect result = CGRectZero;
+    
+    if (previewAspRat == finalAspRat) { // same aspect ratio
+        result.size = finalSize;
+    }
+    else if (previewAspRat > finalAspRat) { // preview is fatter
+        result.size.width = finalSize.width;
+        CGFloat ratP2F = finalSize.width/previewSize.width;
+        result.size.height = ratP2F * previewSize.height;
+        result.origin.y = abs(finalSize.height - result.size.height) / 2.0f;
+    }
+    else { // preview is taller
+        result.size.height = finalSize.height;
+        CGFloat ratP2F = finalSize.height/previewSize.height;
+        result.size.width = ratP2F * previewSize.width;
+        result.origin.x = abs(finalSize.width - result.size.width) / 2.0f;
+    }
+    return CGRectIntegral(result);
 }
 
 #pragma mark - CameraViewDelegate

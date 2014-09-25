@@ -89,4 +89,12 @@
  *  @return A DBCameraViewController
  */
 - (instancetype) initWithDelegate:(id<DBCameraViewControllerDelegate>)delegate cameraView:(id)camera;
+
+/**
+ *  Set overlay image on photo. Set position in a delegate method. Delegate must be set.
+ *  NOTE: Currently overlay feature doesn't support orientation change. So calling this method
+ *  automatically sets `ignoreMotionRotation = YES`.
+ */
+- (void)setOverlayImage:(UIImage *)overlayImage delegate:(id<DBCameraOverlayDelegate>)delegate;
+
 @end
