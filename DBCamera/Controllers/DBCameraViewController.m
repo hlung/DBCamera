@@ -126,14 +126,19 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
         [[DBMotionManager sharedManager] startMotionHandler];
     }
     
+    // add/remove overlay as needed
     if (self.overlayImage) {
-        
-        // create overlayImageView
         self.overlayImageView.frame = [self.overlayDelegate camera:self
                                                   overlayImageView:self.overlayImageView
                                                frameForPreviewSize:self.cameraView.previewLayer.frame.size];
         self.overlayImageView.image = self.overlayImage;
-        [self.cameraView.previewLayer addSublayer:self.overlayImageView.layer];
+        
+        // Adding a layer to `previewLayer` blocks the main thread too long on old devices (~iPhone4).
+        // This may make the `previewLayer` to not appear. So we need to unblock main thread.
+        // Using 0.5 delay just to be sure it will totally work.
+        [self.cameraView.previewLayer performSelector:@selector(addSublayer:)
+                                           withObject:self.overlayImageView.layer
+                                           afterDelay:0.5];
     }
     else {
         [self.overlayImageView.layer removeFromSuperlayer];
