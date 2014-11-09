@@ -151,6 +151,9 @@ NSLocalizedStringFromTable(key, @"DBCamera", nil)
     [super viewWillAppear:animated];
     if ( !self.customCamera )
         [self checkForLibraryImage];
+
+    if ( [_delegate respondsToSelector:@selector(camera:viewWillAppear:)] )
+        [_delegate camera:self viewWillAppear:animated];
 }
 
 - (void) viewWillDisappear:(BOOL)animated

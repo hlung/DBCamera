@@ -100,12 +100,20 @@
  *  @param image    The captured image
  *  @param metadata The metadata of the image
  */
-- (void) camera:(id)cameraViewController didFinishWithImage:(UIImage *)image withMetadata:(NSDictionary *)metadata;
+- (void) camera:(DBCameraViewController*)cameraViewController didFinishWithImage:(UIImage *)image withMetadata:(NSDictionary *)metadata;
 
 /**
  *  Tells the delegate when the camera must be dismissed
  */
-- (void) dismissCamera:(id)cameraViewController;
+- (void) dismissCamera:(DBCameraViewController*)cameraViewController;
+
+/**
+ *  Tells the delegate when viewWillAppear is called.
+ *  Do camera view customizations (e.g. hiding cameraButton) here instead of after initialization to avoid missing `previewLayer` bug.
+ *
+ *  @param cameraViewController    The controller object managing the DBCamera interface.
+ */
+- (void) camera:(DBCameraViewController*)cameraViewController viewWillAppear:(BOOL)animated;
 @end
 
 @protocol DBCameraOverlayDelegate <NSObject>

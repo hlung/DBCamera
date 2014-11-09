@@ -220,8 +220,9 @@ typedef void (^TableRowBlock)();
 }
 
 - (CGRect) camera:(id)cameraViewController overlayImageView:(UIImageView*)imageView frameForPreviewSize:(CGSize)size {
+    // create a square overlayImageView rect, depending on preview size width
     CGFloat shorterSide = size.width < size.height ? size.width : size.height;
-    CGFloat length = shorterSide * 0.4375; // if rect.size.width is 320, length is 140
+    CGFloat length = shorterSide * 0.4375; // if rect.size.width is 320, then overlay size is 140x140
     CGSize overlaySize = CGSizeMake(length, length);
     return CGRectIntegral(CGRectMake((size.width - overlaySize.width)/2,
                                      (size.height - overlaySize.height)/2,
@@ -257,12 +258,12 @@ typedef void (^TableRowBlock)();
 
 #pragma mark - DBCameraViewControllerDelegate
 
-- (void) dismissCamera:(id)cameraViewController{
+- (void) dismissCamera:(DBCameraViewController*)cameraViewController{
     [self.presentedViewController dismissViewControllerAnimated:YES completion:nil];
     [cameraViewController restoreFullScreenMode];
 }
 
-- (void) camera:(id)cameraViewController didFinishWithImage:(UIImage *)image withMetadata:(NSDictionary *)metadata
+- (void) camera:(DBCameraViewController*)cameraViewController didFinishWithImage:(UIImage *)image withMetadata:(NSDictionary *)metadata
 {
     NSLog(@"didFinishWithImage size: %@", NSStringFromCGSize(image.size));
     DetailViewController *detail = [[DetailViewController alloc] init];
